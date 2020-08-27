@@ -1,2 +1,3 @@
 rootProject.name='BLEMeshDemo'
 include ':app'
+include ':blemesh'

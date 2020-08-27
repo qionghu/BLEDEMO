@@ -23,7 +23,9 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.gson.Gson
+import com.hq.blemesh.BleMesh
 import kotlinx.android.synthetic.main.activity_main.*
+import java.lang.Exception
 import kotlin.math.log
 
 
@@ -56,6 +58,9 @@ class MainActivity : AppCompatActivity() {
 
         initView()
         initBlueTooth()
+        initReceiver()
+
+//        BleMesh.getInstance().test()
     }
 
     private fun initReceiver(){
@@ -123,8 +128,13 @@ class MainActivity : AppCompatActivity() {
                     scanner = bluetoothAdapter?.bluetoothLeScanner
                 }
                 scanner?.let {
-                    it.startScan(null, scanSetting, mScanCallback)
-                    startScanTimer()
+                    Log.d(TAG, " start scan!")
+                    try {
+                        it.startScan(null, scanSetting, mScanCallback)
+                    }catch (exception: Exception){
+                        exception.printStackTrace()
+                    }
+                    //startScanTimer()
                 }
             }
         }else{
@@ -153,10 +163,14 @@ class MainActivity : AppCompatActivity() {
 
         override fun onScanResult(callbackType: Int, result: ScanResult?) {
             super.onScanResult(callbackType, result)
+            val device = result?.device
+            Log.d(TAG, " onScanResult callbackType : $callbackType  info  name :  ${device?.name}  -- address : ${device?.address}  -- uuids : ${device?.uuids}")
+            Log.d(TAG, " onScanResult full device info ： ${Gson().toJson(device)} ")
         }
 
         override fun onScanFailed(errorCode: Int) {
             super.onScanFailed(errorCode)
+            Log.d(TAG, " onScanFailed errorCode ： $errorCode ")
         }
 
     }
