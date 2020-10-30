@@ -61,6 +61,7 @@ class MainActivity : AppCompatActivity() {
         initReceiver()
 
 //        BleMesh.getInstance().test()
+        //test add some content
     }
 
     private fun initReceiver(){
