@@ -2,4 +2,6 @@
     <string name="app_name">BLEMeshDemo</string>
 
 
+    <string name="add_device">add device</string>
+
 </resources>
