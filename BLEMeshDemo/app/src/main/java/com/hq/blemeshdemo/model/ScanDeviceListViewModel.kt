@@ -20,12 +20,20 @@ import java.lang.Exception
 class ScanDeviceListViewModel : ViewModel() {
     val TAG = "ScanDeviceListViewModel"
 
-    private val OPEN_BLUETOOTH_REQUEST_CODE = 1001
+    companion object{
+        val SCAN_STATUS_SUCCESS = 0
+        val SCAN_STATUS_ADAPTER_DISABLE = 1
+        val SCAN_STATUS_API_LOW = 2
+        val SCAN_STATUS_SCANNING = 3
+        val SCAN_STATUS_UNKOWN_ERROR = 4
+    }
+
+
 
     private var bluetoothAdapter: BluetoothAdapter? = null
 
     private var mScanning = false
-    private var scanner : BluetoothLeScanner? = null
+    private var scanner: BluetoothLeScanner? = null
     private val handler: Handler = Handler(Looper.getMainLooper())
     private val scanSetting: ScanSettings by lazy { buildScanSettings() }
     private val mScanCallback: ScanCallback by lazy { buildScanCallBack() }
@@ -35,13 +43,13 @@ class ScanDeviceListViewModel : ViewModel() {
         MutableLiveData<List<UnprovisionDevice>>()
     }
 
-    private val dataMap : HashSet<String> = HashSet()
+    private val dataMap: HashSet<String> = HashSet()
 
     init {
 
-        deviceListLiveData.observeForever{
+        deviceListLiveData.observeForever {
             it.forEach {
-                if(!dataMap.contains(it.mac)){
+                if (!dataMap.contains(it.mac)) {
                     dataMap.add(it.mac)
                 }
             }
@@ -79,26 +87,21 @@ class ScanDeviceListViewModel : ViewModel() {
 
     fun initBlueTooth(){
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-
-        if(bluetoothAdapter == null || !bluetoothAdapter!!.isEnabled){
-           // val intent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-           // this.startActivityForResult(intent, OPEN_BLUETOOTH_REQUEST_CODE)
-            Log.d(TAG, "bluetoothAdapter 不正常 ！")
-        }else{
-            startScan()
-        }
     }
 
 
+    fun startScan(): Int {
 
-    private fun startScan(){
+        if (bluetoothAdapter == null || !bluetoothAdapter!!.isEnabled) return SCAN_STATUS_ADAPTER_DISABLE
+
         //TODO 暂时只适配5.0以上的
-        if(android.os.Build.VERSION.SDK_INT >= 21){
-            if(mScanning){
+        if (android.os.Build.VERSION.SDK_INT >= 21) {
+            if (mScanning) {
                 Log.d(TAG, "正在扫描蓝牙中...!")
-            }else{
+                return SCAN_STATUS_SCANNING
+            } else {
 
-                if(scanner == null){
+                if (scanner == null) {
                     scanner = bluetoothAdapter?.bluetoothLeScanner
                 }
                 scanner?.let {
@@ -106,40 +109,51 @@ class ScanDeviceListViewModel : ViewModel() {
                     try {
                         it.startScan(null, scanSetting, mScanCallback)
                         mScanning = true
-                    }catch (exception: Exception){
+                    } catch (exception: Exception) {
                         exception.printStackTrace()
                     }
                     startScanTimer()
                 }
+
+                if (mScanning) {
+                    return SCAN_STATUS_SUCCESS
+                } else {
+                    return SCAN_STATUS_UNKOWN_ERROR
+                }
             }
-        }else{
+        } else {
             Log.d(TAG, "版本低于5.0暂时未适配!")
+            return SCAN_STATUS_API_LOW
         }
 
     }
 
-    private fun startScanTimer(){
+    fun stopScan(){
+        if(mScanning) scanner?.stopScan(mScanCallback)
+    }
+
+    private fun startScanTimer() {
         handler.removeCallbacksAndMessages(null)
         handler.postDelayed({
-            if(android.os.Build.VERSION.SDK_INT >= 21){
-                if(mScanning){
+            if (android.os.Build.VERSION.SDK_INT >= 21) {
+                if (mScanning) {
                     scanner?.let {
                         mScanning = false
                         it.stopScan(mScanCallback)
                         Log.d(TAG, "停止扫描!")
                     }
                 }
-            }else{
+            } else {
                 Log.d(TAG, "版本低于5.0暂时未适配!")
             }
-        }, 30*1000)
+        }, 30 * 1000)
     }
 
     private fun buildScanSettings(): ScanSettings {
-        val builder =  ScanSettings.Builder()
+        val builder = ScanSettings.Builder()
             .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY) //高功耗
 
-        if(android.os.Build.VERSION.SDK_INT >= 23){
+        if (android.os.Build.VERSION.SDK_INT >= 23) {
             builder.setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
             builder.setMatchMode(ScanSettings.MATCH_MODE_STICKY)
         }
@@ -148,7 +162,7 @@ class ScanDeviceListViewModel : ViewModel() {
     }
 
     private fun buildScanCallBack(): ScanCallback {
-        return object: ScanCallback(){
+        return object : ScanCallback() {
 
             override fun onScanResult(callbackType: Int, result: ScanResult?) {
                 super.onScanResult(callbackType, result)
@@ -168,8 +182,8 @@ class ScanDeviceListViewModel : ViewModel() {
         }
     }
 
-    private fun addNewDevice(unprovisionDevice: UnprovisionDevice){
-        if(!dataMap.contains(unprovisionDevice.mac)){
+    private fun addNewDevice(unprovisionDevice: UnprovisionDevice) {
+        if (!dataMap.contains(unprovisionDevice.mac)) {
             val devices = arrayListOf<UnprovisionDevice>()
             devices.addAll(deviceListLiveData.value ?: emptyList())
             devices.add(unprovisionDevice)
@@ -177,11 +191,11 @@ class ScanDeviceListViewModel : ViewModel() {
         }
     }
 
-    fun refreshDeviceList(){
+    fun refreshDeviceList() {
         loadDevices()
     }
 
-    private fun loadDevices(){
+    private fun loadDevices() {
 //        GlobalScope.launch(Dispatchers.IO){
 //            val resource =  Iot.apiEntry.get<DeviceManager>()?.loadDevices(null) ?: Resource.error(StatusCodes.UnknownError())
 //
@@ -194,7 +208,7 @@ class ScanDeviceListViewModel : ViewModel() {
 //        }
     }
 
-    fun removeDevice(deviceId: String){
+    fun removeDevice(deviceId: String) {
         //没有实现删除设备后 ，刷新数据和界面
 //        val removeDevice = deviceListLiveData.value?.find { device -> device.deviceId == deviceId }
 //        logd(TAG," removeDevice : ${Gson().toJson(removeDevice)}")
@@ -207,5 +221,5 @@ class ScanDeviceListViewModel : ViewModel() {
     }
 
 
-
 }
+

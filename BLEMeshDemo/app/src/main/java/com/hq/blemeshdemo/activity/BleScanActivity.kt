@@ -12,7 +12,9 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.view.MenuItem
 import android.widget.Toast
+import androidx.appcompat.app.ActionBar
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -26,6 +28,8 @@ import java.lang.Exception
 class BleScanActivity : AppCompatActivity() {
 
     private val TAG = "BleScanActivity"
+
+    private val OPEN_BLUETOOTH_REQUEST_CODE = 1001
 
     private var viewModel: ScanDeviceListViewModel? = null
 
@@ -42,27 +46,55 @@ class BleScanActivity : AppCompatActivity() {
         device_recycler_view.layoutManager = LinearLayoutManager(this)
         device_recycler_view.adapter = deviceAdapter
 
+        setActionBar()
+
     }
 
-//    fun initBlueTooth(){
-//        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-//
-//        if(bluetoothAdapter == null || !bluetoothAdapter!!.isEnabled){
-//            val intent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-//            this.startActivityForResult(intent, OPEN_BLUETOOTH_REQUEST_CODE)
-//        }else{
-//            startScan()
-//        }
-//    }
-//
-//    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-//        super.onActivityResult(requestCode, resultCode, data)
-//        if(requestCode == OPEN_BLUETOOTH_REQUEST_CODE && resultCode == Activity.RESULT_OK){
-//            startScan()
-//        }else if(requestCode == OPEN_BLUETOOTH_REQUEST_CODE && resultCode == Activity.RESULT_CANCELED){
-//            Toast.makeText(this, "Please Enable BlueTooth !", Toast.LENGTH_LONG).show()
-//        }
-//    }
+    private fun setActionBar(){
+        supportActionBar?.title = "扫描Mesh设备"
+        val options = ActionBar.DISPLAY_SHOW_TITLE.or(ActionBar.DISPLAY_HOME_AS_UP)
+        Log.d(TAG, "setActionBar options : $options")
+        supportActionBar?.displayOptions = options
+        supportActionBar?.setHomeButtonEnabled(true)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+
+        when(item?.itemId){
+            android.R.id.home -> {
+                viewModel?.stopScan()
+                finish()
+            }
+
+        }
+
+        return super.onOptionsItemSelected(item)
+    }
+
+    override fun onResume() {
+        val status = viewModel?.startScan()
+
+        if(status == ScanDeviceListViewModel.SCAN_STATUS_ADAPTER_DISABLE){
+            requestBluetoothAdapter()
+        }
+
+        super.onResume()
+    }
+
+    fun requestBluetoothAdapter(){
+        val intent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+        this.startActivityForResult(intent, OPEN_BLUETOOTH_REQUEST_CODE)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if(requestCode == OPEN_BLUETOOTH_REQUEST_CODE && resultCode == Activity.RESULT_OK){
+            viewModel?.initBlueTooth()
+            viewModel?.startScan()
+        }else if(requestCode == OPEN_BLUETOOTH_REQUEST_CODE && resultCode == Activity.RESULT_CANCELED){
+            Toast.makeText(this, "Please Enable BlueTooth !", Toast.LENGTH_LONG).show()
+        }
+    }
 
 
 }

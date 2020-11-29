@@ -15,7 +15,9 @@ fun ParseUnprovision(result : ScanResult): UnprovisionDevice{
     Log.d(TAG, "parseUnprovision info  name :  ${device?.name}  -- address : ${device?.address}  -- scanRecord : ${recordStr}")
     //Log.d(TAG, "parseUnprovision full device info ： ${Gson().toJson(device)} ")
 
+    val unprovisionDevice = UnprovisionDevice(device.address)
+    unprovisionDevice.setScanRecord(result.scanRecord.bytes)
+    Log.d(TAG, " unprovisionDevice : ${unprovisionDevice.toString()}")
 
-
-    return UnprovisionDevice(device.address, result.scanRecord.bytes)
+    return unprovisionDevice
 }

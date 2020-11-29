@@ -46,8 +46,8 @@ class ScanDeviceListAdapter(val fragmentActivity: FragmentActivity, liveData: Li
     override fun onBindViewHolder(holder: DeviceViewHolder, position: Int) {
 //        holder.itemView.card_view
         val device = dataList[position]
-        val recordStr = bytesToHexString(device.scanRecord, ":")
-        val str = "address : ${device.mac} --   \n scanRecord : ${recordStr}"
+        val uuidStr = bytesToHexString(device.getUuidArr(), ":")
+        val str = "address : ${device.mac} --   \n uuidStr : ${uuidStr}"
         holder.itemView.title.text = str
 
 
