@@ -5,15 +5,12 @@ import android.bluetooth.le.BluetoothLeScanner
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
-import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import android.widget.Toast
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.google.gson.Gson
-import com.hq.blemeshdemo.bean.UnprovisionDevice
+import com.hq.blemeshdemo.bean.AdvertingDevice
 import com.hq.blemeshdemo.parser.ParseUnprovision
 import java.lang.Exception
 
@@ -22,6 +19,13 @@ class ScanDeviceListViewModel : ViewModel() {
 
     private val OPEN_BLUETOOTH_REQUEST_CODE = 1001
 
+    companion object{
+        val ALL_DISPLAY = 0x0001
+        val DISPLAY_ALL_MESH = 0x0010
+        val JUST_DISPLAY_UNPROVISION = 0x0011
+        val JUST_DISPLAY_BIND = 0x0100
+    }
+
     private var bluetoothAdapter: BluetoothAdapter? = null
 
     private var mScanning = false
@@ -29,10 +33,15 @@ class ScanDeviceListViewModel : ViewModel() {
     private val handler: Handler = Handler(Looper.getMainLooper())
     private val scanSetting: ScanSettings by lazy { buildScanSettings() }
     private val mScanCallback: ScanCallback by lazy { buildScanCallBack() }
+    private var displayMode: Int = ALL_DISPLAY
+    private val scan_time_out = 10*1000L
 
+    fun setDisplayMode(mode: Int){
+        displayMode = mode
+    }
 
-    val deviceListLiveData: MutableLiveData<List<UnprovisionDevice>> by lazy {
-        MutableLiveData<List<UnprovisionDevice>>()
+    val deviceListLiveData: MutableLiveData<List<AdvertingDevice>> by lazy {
+        MutableLiveData<List<AdvertingDevice>>()
     }
 
     private val dataMap : HashSet<String> = HashSet()
@@ -118,22 +127,28 @@ class ScanDeviceListViewModel : ViewModel() {
 
     }
 
+    fun stopScan(){
+        if(android.os.Build.VERSION.SDK_INT >= 21){
+            if(mScanning){
+                scanner?.let {
+                    mScanning = false
+                    it.stopScan(mScanCallback)
+                    Log.d(TAG, "停止扫描!")
+                }
+            }
+        }else{
+            Log.d(TAG, "版本低于5.0暂时未适配!")
+        }
+    }
+
     private fun startScanTimer(){
         handler.removeCallbacksAndMessages(null)
         handler.postDelayed({
-            if(android.os.Build.VERSION.SDK_INT >= 21){
-                if(mScanning){
-                    scanner?.let {
-                        mScanning = false
-                        it.stopScan(mScanCallback)
-                        Log.d(TAG, "停止扫描!")
-                    }
-                }
-            }else{
-                Log.d(TAG, "版本低于5.0暂时未适配!")
-            }
-        }, 30*1000)
+            stopScan()
+        }, scan_time_out)
     }
+
+
 
     private fun buildScanSettings(): ScanSettings {
         val builder =  ScanSettings.Builder()
@@ -168,12 +183,22 @@ class ScanDeviceListViewModel : ViewModel() {
         }
     }
 
-    private fun addNewDevice(unprovisionDevice: UnprovisionDevice){
-        if(!dataMap.contains(unprovisionDevice.mac)){
-            val devices = arrayListOf<UnprovisionDevice>()
-            devices.addAll(deviceListLiveData.value ?: emptyList())
-            devices.add(unprovisionDevice)
-            deviceListLiveData.value = devices
+    private fun addNewDevice(advertingDevice: AdvertingDevice){
+        if(!dataMap.contains(advertingDevice.mac)){
+            var flag = true
+            when(displayMode){
+                ALL_DISPLAY -> flag = true
+                DISPLAY_ALL_MESH -> flag = advertingDevice.isMeshDevice
+                JUST_DISPLAY_UNPROVISION -> flag = advertingDevice.isMeshDevice && advertingDevice.isUnprovisionDevice
+                JUST_DISPLAY_BIND -> flag = advertingDevice.isMeshDevice && !advertingDevice.isUnprovisionDevice
+            }
+
+            if(flag){
+                val devices = arrayListOf<AdvertingDevice>()
+                devices.addAll(deviceListLiveData.value ?: emptyList())
+                devices.add(advertingDevice)
+                deviceListLiveData.value = devices
+            }
         }
     }
 

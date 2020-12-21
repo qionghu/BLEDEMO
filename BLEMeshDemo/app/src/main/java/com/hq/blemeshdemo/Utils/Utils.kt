@@ -12,8 +12,8 @@ fun toastLong(context: Context, str: String){
     Toast.makeText(context, str, Toast.LENGTH_LONG).show()
 }
 
-fun bytesToHexString( array: ByteArray ,  separator: String): String {
-    if (array.isEmpty())
+fun bytesToHexString( array: ByteArray? ,  separator: String): String {
+    if (array == null || array.isEmpty())
         return "";
 
     val sb: StringBuilder = StringBuilder();
@@ -22,7 +22,9 @@ fun bytesToHexString( array: ByteArray ,  separator: String): String {
 //    formatter.format("%02X", array[0]);
 
     array.forEach {
-        sb.append(separator);
+        if(sb.isNotEmpty()){
+            sb.append(separator);
+        }
         formatter.format("%02X", it);
     }
 

@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
 import com.hq.blemeshdemo.R
+import com.hq.blemeshdemo.Utils.toastLong
 import com.hq.blemeshdemo.adapter.ScanDeviceListAdapter
 import com.hq.blemeshdemo.model.ScanDeviceListViewModel
 import kotlinx.android.synthetic.main.activity_ble_scan.*
@@ -36,12 +37,28 @@ class BleScanActivity : AppCompatActivity() {
         setContentView(R.layout.activity_ble_scan)
 
         viewModel = ViewModelProvider(this).get(ScanDeviceListViewModel::class.java)
+        viewModel?.setDisplayMode(ScanDeviceListViewModel.JUST_DISPLAY_UNPROVISION)
 
         deviceAdapter = ScanDeviceListAdapter(this, viewModel?.deviceListLiveData!!)
 
         device_recycler_view.layoutManager = LinearLayoutManager(this)
         device_recycler_view.adapter = deviceAdapter
 
+        deviceAdapter?.addItemClickListener {
+            //toastLong(this, it.mac)
+            viewModel?.stopScan()
+            val intent = Intent(this, ProvisionActivity::class.java)
+            intent.putExtra("deviceMac", it.mac)
+            intent.putExtra("bluetoothDevice", it.bluetoothDevice)
+            startActivity(intent)
+
+        }
+
+    }
+
+    override fun onStop() {
+        viewModel?.stopScan()
+        super.onStop()
     }
 
 //    fun initBlueTooth(){

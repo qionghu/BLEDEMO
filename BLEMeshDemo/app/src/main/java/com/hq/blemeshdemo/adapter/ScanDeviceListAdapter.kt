@@ -10,17 +10,17 @@ import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.RecyclerView
 import com.hq.blemeshdemo.R
 import com.hq.blemeshdemo.Utils.bytesToHexString
-import com.hq.blemeshdemo.bean.UnprovisionDevice
+import com.hq.blemeshdemo.bean.AdvertingDevice
 import kotlinx.android.synthetic.main.unprovision_device_item.view.*
 
 //private val dataList: ArrayList<Device>,
-class ScanDeviceListAdapter(val fragmentActivity: FragmentActivity, liveData: LiveData<List<UnprovisionDevice>>) : RecyclerView.Adapter<ScanDeviceListAdapter.DeviceViewHolder>() {
+class ScanDeviceListAdapter(val fragmentActivity: FragmentActivity, liveData: LiveData<List<AdvertingDevice>>) : RecyclerView.Adapter<ScanDeviceListAdapter.DeviceViewHolder>() {
 
     private val TAG = "ScanDeviceListAdapter"
-    val dataList: ArrayList<UnprovisionDevice> = arrayListOf()
+    val dataList: ArrayList<AdvertingDevice> = arrayListOf()
 
     init {
-        val listObserver = Observer<List<UnprovisionDevice>>{
+        val listObserver = Observer<List<AdvertingDevice>>{
             dataList.clear()
             dataList.addAll(it)
             sortList()
@@ -46,10 +46,16 @@ class ScanDeviceListAdapter(val fragmentActivity: FragmentActivity, liveData: Li
     override fun onBindViewHolder(holder: DeviceViewHolder, position: Int) {
 //        holder.itemView.card_view
         val device = dataList[position]
+        val typeStr = bytesToHexString(byteArrayOf(device.type), ":")
+        val beaconStr = bytesToHexString(byteArrayOf(device.beaconType), ":")
+        val oobStr = bytesToHexString(device.oobInfo, ":")
+        val uriHash = bytesToHexString(device.uriHash, ":")
         val recordStr = bytesToHexString(device.scanRecord, ":")
-        val str = "address : ${device.mac} --   \n scanRecord : ${recordStr}"
+        val str = "address : ${device.mac} --   \n typeStr : $typeStr -- beaconStr : $beaconStr  -- oobStr : $oobStr  -- uriHash : $uriHash  -- uuid : ${device.uuid} "
         holder.itemView.title.text = str
-
+        holder.itemView.setOnClickListener {
+            this.onItemClickListener?.invoke(device)
+        }
 
 
 //        val typeStr = " ${device.category } -- ${device.type}"
@@ -95,6 +101,11 @@ class ScanDeviceListAdapter(val fragmentActivity: FragmentActivity, liveData: Li
     private var onItemLongClickListener: ((deviceId: String) -> Unit)? = null
     fun addItemLongClickListener(OnItemLongClickListener : ((deviceId: String) -> Unit)){
         this.onItemLongClickListener = OnItemLongClickListener
+    }
+
+    private var onItemClickListener: ((device: AdvertingDevice) -> Unit)? = null
+    fun addItemClickListener(OnItemClickListener : ((device: AdvertingDevice) -> Unit)){
+        this.onItemClickListener = OnItemClickListener
     }
 
 
