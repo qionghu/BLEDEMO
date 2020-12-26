@@ -34,5 +34,10 @@ class ProvisionActivity : AppCompatActivity() {
         viewModel?.connectDevice(this, device)
     }
 
+    override fun onStop() {
+        viewModel?.close()
+        super.onStop()
+    }
+
 
 }

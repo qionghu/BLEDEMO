@@ -30,5 +30,6 @@ enum class ProvisionStatus(val status: Int){
 }
 
 data class ProvisionResult(
-    val status: ProvisionStatus
+    val status: ProvisionStatus,
+    val bean: ProvisionBean? = null
 )
