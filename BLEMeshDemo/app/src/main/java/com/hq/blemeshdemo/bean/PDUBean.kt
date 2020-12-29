@@ -92,15 +92,15 @@ class ProvisionPublicKeyBean(
 
     companion object{
         fun parseData(data: ByteArray): ProvisionPublicKeyBean? {
-            if(data.size < 32){
-                Log.d("PublicKeyBean", "parseData data size is not 32 , size is ${data.size}")
+            if(data.size < 64){
+                Log.d("PublicKeyBean", "parseData data size is not 64 , size is ${data.size}")
                 return null
             }
 
-            val xByteArray = ByteArray(16)
-            val yByteArray = ByteArray(16)
-            System.arraycopy(data, 0 , xByteArray, 0 , 16)
-            System.arraycopy(data, 16 , yByteArray, 0 , 16)
+            val xByteArray = ByteArray(32)
+            val yByteArray = ByteArray(32)
+            System.arraycopy(data, 0 , xByteArray, 0 , 32)
+            System.arraycopy(data, 32 , yByteArray, 0 , 32)
 
             return ProvisionPublicKeyBean(
                 xByteArray,
@@ -116,4 +116,30 @@ class ProvisionPublicKeyBean(
         return data
     }
 
+}
+
+
+class ProvisionConfirmationBean(
+        val confirmation: ByteArray
+): ProvisionBean(){
+    override fun toBytes(): ByteArray {
+        return confirmation
+    }
+}
+
+class ProvisionRandomBean(
+        val random: ByteArray
+): ProvisionBean(){
+    override fun toBytes(): ByteArray {
+        return random
+    }
+}
+
+class ProvisioningDataBean(
+        val data: ByteArray,
+        val micSize: Int = 8
+): ProvisionBean(){
+    override fun toBytes(): ByteArray {
+        return data
+    }
 }

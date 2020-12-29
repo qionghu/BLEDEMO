@@ -26,7 +26,10 @@ enum class ProvisionStatus(val status: Int){
     Random(6),
     Data(7),
     Complete(8),
-    Failed(9)
+    Failed(9),
+    RecePublicKey(100),
+    ReceConfirmation(101),
+    ReceRandom(102)
 }
 
 data class ProvisionResult(
