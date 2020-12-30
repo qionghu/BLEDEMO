@@ -19,6 +19,7 @@ class ProvisionActivity : AppCompatActivity() {
 
     private var deviceMac: String = ""
     private var device: BluetoothDevice? = null
+    private var isUnprovisionDevice: Boolean = false
     private var viewModel: ProvisionViewModel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,9 +30,12 @@ class ProvisionActivity : AppCompatActivity() {
 
         deviceMac = intent.getStringExtra("deviceMac")
         device = intent.getParcelableExtra("bluetoothDevice")
+        isUnprovisionDevice = intent.getBooleanExtra("isUnprovisionDevice", false)
         provison_tv.text = deviceMac
 
         viewModel?.connectDevice(this, device)
+        viewModel?.setProvisionStatus(isUnprovisionDevice)
+
     }
 
     override fun onStop() {

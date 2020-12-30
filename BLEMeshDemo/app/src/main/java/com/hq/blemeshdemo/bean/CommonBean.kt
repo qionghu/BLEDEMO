@@ -13,7 +13,11 @@ data class AdvertingDevice(
     val oobInfo: ByteArray, //2 Octets
     val uriHash: ByteArray, //4 Octets
     val scanRecord: ByteArray
-)
+){
+    override fun equals(other: Any?): Boolean {
+        return mac.equals((other as AdvertingDevice).mac)
+    }
+}
 
 enum class ProvisionStatus(val status: Int){
     None(-1),

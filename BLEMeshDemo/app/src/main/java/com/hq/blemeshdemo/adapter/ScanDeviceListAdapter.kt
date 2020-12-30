@@ -51,7 +51,8 @@ class ScanDeviceListAdapter(val fragmentActivity: FragmentActivity, liveData: Li
         val oobStr = bytesToHexString(device.oobInfo, ":")
         val uriHash = bytesToHexString(device.uriHash, ":")
         val recordStr = bytesToHexString(device.scanRecord, ":")
-        val str = "address : ${device.mac} --   \n typeStr : $typeStr -- beaconStr : $beaconStr  -- oobStr : $oobStr  -- uriHash : $uriHash  -- uuid : ${device.uuid} "
+        val bindStatus = if(device.isUnprovisionDevice) "unprovisioned" else "binded"
+        val str = "address : ${device.mac} --  bind Status :  $bindStatus   \n typeStr : $typeStr -- beaconStr : $beaconStr  -- oobStr : $oobStr  -- uriHash : $uriHash  -- uuid : ${device.uuid} "
         holder.itemView.title.text = str
         holder.itemView.setOnClickListener {
             this.onItemClickListener?.invoke(device)

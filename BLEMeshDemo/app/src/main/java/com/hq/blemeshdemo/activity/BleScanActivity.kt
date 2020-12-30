@@ -50,8 +50,8 @@ class BleScanActivity : AppCompatActivity() {
             val intent = Intent(this, ProvisionActivity::class.java)
             intent.putExtra("deviceMac", it.mac)
             intent.putExtra("bluetoothDevice", it.bluetoothDevice)
+            intent.putExtra("isUnprovisionDevice", it.isUnprovisionDevice)
             startActivity(intent)
-
         }
 
     }

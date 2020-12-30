@@ -8,10 +8,7 @@ import android.os.Looper
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.hq.blemeshdemo.Utils.PDUType
-import com.hq.blemeshdemo.Utils.UUID
-import com.hq.blemeshdemo.Utils.bytesToHexString
-import com.hq.blemeshdemo.Utils.initSecurity
+import com.hq.blemeshdemo.Utils.*
 import com.hq.blemeshdemo.bean.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -28,6 +25,7 @@ import org.spongycastle.jce.ECNamedCurveTable
 import org.spongycastle.jce.spec.ECPublicKeySpec
 import org.spongycastle.util.Arrays
 import org.spongycastle.util.BigIntegers
+import org.spongycastle.util.Strings
 import java.lang.ref.WeakReference
 import java.math.BigInteger
 import java.nio.ByteBuffer
@@ -163,6 +161,11 @@ class ProvisionViewModel  : ViewModel() {
 
             gatt = device.connectGatt(context, false, gattCallback)
         }
+    }
+
+    private var isUnprovisionDevice: Boolean = false
+    fun setProvisionStatus(isUnprovisionDevice: Boolean){
+        this.isUnprovisionDevice = isUnprovisionDevice
     }
 
     fun reconnectDevice(){
@@ -496,18 +499,8 @@ class ProvisionViewModel  : ViewModel() {
     }
 
     private fun getRawProvisioningData(): ByteArray{
-        val networkKey = ByteArray(16)
-        val secureRandom = SecureRandom()
-        secureRandom.nextBytes(networkKey)
-        Log.d(TAG, "getRawProvisioningData networkKey : ${bytesToHexString(networkKey, ":")} ")
-
-        val netKeyIndex = byteArrayOf(0x00, 0x00)
-        val ivIndex = byteArrayOf(0x00, 0x00, 0x00, 0x00)
-        //val keyRefreshFlag = 0x00
-        //val ivUpdateFlag = 0x00
-        val flags = 0x00.toByte()
-        val unicastAddress = byteArrayOf(0x03, 0xea.toByte())
-
+        val networkKey = getNetworkKey()
+        //Log.d(TAG, "getRawProvisioningData networkKey : ${bytesToHexString(networkKey, ":")} ")
         val buffer = ByteBuffer.allocate(25)
         buffer.put(networkKey).put(netKeyIndex).put(flags).put(ivIndex).put(unicastAddress)
         return buffer.array()
@@ -523,13 +516,6 @@ class ProvisionViewModel  : ViewModel() {
         System.arraycopy(beanData, 0 , data, 2, beanData.size)
         return data
     }
-
-    private fun sendCompositionDataGet(){
-
-
-    }
-
-
 
     private fun updateProvisionStatus(provisionStatus: ProvisionStatus, bean: ProvisionBean? = null ){
         GlobalScope.launch(Dispatchers.Main){
@@ -648,6 +634,22 @@ class ProvisionViewModel  : ViewModel() {
 
     }
 
+    
+
+    private fun sendCompositionDataGet(){
+
+
+    }
+
+    /**
+     * 查询model绑定appkey的情况
+     */
+    private fun getAppKeyBindStatus(){
+
+    }
+
+
+
     private val gattCallback: BluetoothGattCallback = object: BluetoothGattCallback(){
 
         override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
@@ -676,7 +678,13 @@ class ProvisionViewModel  : ViewModel() {
 //                    if(it.uuid.toString().equals(UUID.DEVICE_INFO_UUID)) readServiceInfo(it)
                     if(it.uuid.equals(UUID.PROVISION_SERVICE_UUID)){
                         readServiceInfo(it)
-                        startProvision(it)
+
+                        if(isUnprovisionDevice){
+                            startProvision(it)
+                        }else{
+                            sendCompositionDataGet()
+                        }
+
                     }
                 }
 

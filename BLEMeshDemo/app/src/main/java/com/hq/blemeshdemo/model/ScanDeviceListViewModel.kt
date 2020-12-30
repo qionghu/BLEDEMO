@@ -33,7 +33,7 @@ class ScanDeviceListViewModel : ViewModel() {
     private val handler: Handler = Handler(Looper.getMainLooper())
     private val scanSetting: ScanSettings by lazy { buildScanSettings() }
     private val mScanCallback: ScanCallback by lazy { buildScanCallBack() }
-    private var displayMode: Int = ALL_DISPLAY
+    private var displayMode: Int = DISPLAY_ALL_MESH
     private val scan_time_out = 10*1000L
 
     fun setDisplayMode(mode: Int){
@@ -184,21 +184,33 @@ class ScanDeviceListViewModel : ViewModel() {
     }
 
     private fun addNewDevice(advertingDevice: AdvertingDevice){
-        if(!dataMap.contains(advertingDevice.mac)){
-            var flag = true
-            when(displayMode){
-                ALL_DISPLAY -> flag = true
-                DISPLAY_ALL_MESH -> flag = advertingDevice.isMeshDevice
-                JUST_DISPLAY_UNPROVISION -> flag = advertingDevice.isMeshDevice && advertingDevice.isUnprovisionDevice
-                JUST_DISPLAY_BIND -> flag = advertingDevice.isMeshDevice && !advertingDevice.isUnprovisionDevice
-            }
+        var dataflag = 0
+        if(dataMap.contains(advertingDevice.mac)){
+            dataflag = 2  // update
+        }else{
+            dataflag = 1  // add
+        }
 
-            if(flag){
-                val devices = arrayListOf<AdvertingDevice>()
-                devices.addAll(deviceListLiveData.value ?: emptyList())
+        var flag = true
+        when(displayMode){
+            ALL_DISPLAY -> flag = true
+            DISPLAY_ALL_MESH -> flag = advertingDevice.isMeshDevice
+            JUST_DISPLAY_UNPROVISION -> flag = advertingDevice.isMeshDevice && advertingDevice.isUnprovisionDevice
+            JUST_DISPLAY_BIND -> flag = advertingDevice.isMeshDevice && !advertingDevice.isUnprovisionDevice
+        }
+
+        if(flag || dataflag > 0){
+            val devices = arrayListOf<AdvertingDevice>()
+            devices.addAll(deviceListLiveData.value ?: emptyList())
+            if(dataflag == 1){
+                // add
                 devices.add(advertingDevice)
-                deviceListLiveData.value = devices
+            }else if(dataflag == 2){
+                //update
+                devices.remove(advertingDevice)
+                devices.add(advertingDevice)
             }
+            deviceListLiveData.value = devices
         }
     }
 
