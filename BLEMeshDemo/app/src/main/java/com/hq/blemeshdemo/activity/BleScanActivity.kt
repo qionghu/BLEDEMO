@@ -20,7 +20,9 @@ import com.google.gson.Gson
 import com.hq.blemeshdemo.R
 import com.hq.blemeshdemo.Utils.toastLong
 import com.hq.blemeshdemo.adapter.ScanDeviceListAdapter
+import com.hq.blemeshdemo.model.JUST_DISPLAY_UNPROVISION
 import com.hq.blemeshdemo.model.ScanDeviceListViewModel
+import com.hq.blemeshdemo.model.getDisplayString
 import kotlinx.android.synthetic.main.activity_ble_scan.*
 import java.lang.Exception
 
@@ -37,7 +39,6 @@ class BleScanActivity : AppCompatActivity() {
         setContentView(R.layout.activity_ble_scan)
 
         viewModel = ViewModelProvider(this).get(ScanDeviceListViewModel::class.java)
-        viewModel?.setDisplayMode(ScanDeviceListViewModel.JUST_DISPLAY_UNPROVISION)
 
         deviceAdapter = ScanDeviceListAdapter(this, viewModel?.deviceListLiveData!!)
 
@@ -52,6 +53,11 @@ class BleScanActivity : AppCompatActivity() {
             intent.putExtra("bluetoothDevice", it.bluetoothDevice)
             intent.putExtra("isUnprovisionDevice", it.isUnprovisionDevice)
             startActivity(intent)
+        }
+
+        deviceAdapter?.addFilterListener {
+            Log.d(TAG, "onCreate filterListener filterType : ${getDisplayString(it)}")
+            viewModel?.setDisplayMode(it)
         }
 
     }

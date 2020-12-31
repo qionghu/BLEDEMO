@@ -12,19 +12,41 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.hq.blemeshdemo.bean.AdvertingDevice
 import com.hq.blemeshdemo.parser.ParseUnprovision
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.lang.Exception
+
+const val ALL_DISPLAY = 1
+const val DISPLAY_ALL_MESH = 2
+const val JUST_DISPLAY_UNPROVISION = 3
+const val JUST_DISPLAY_BIND = 4
+
+fun getDisplayString(displayMode: Int): String{
+    when(displayMode){
+        ALL_DISPLAY -> {
+            return "ALL_DISPLAY"
+        }
+        DISPLAY_ALL_MESH -> {
+            return "ALL_MESH"
+        }
+        JUST_DISPLAY_UNPROVISION -> {
+            return "UNPROVISION_DEVICE"
+        }
+        JUST_DISPLAY_BIND -> {
+            return "BINDED_DEVICE"
+        }
+        else -> {
+            return "NONE"
+        }
+    }
+}
 
 class ScanDeviceListViewModel : ViewModel() {
     val TAG = "ScanDeviceListViewModel"
 
     private val OPEN_BLUETOOTH_REQUEST_CODE = 1001
-
-    companion object{
-        val ALL_DISPLAY = 0x0001
-        val DISPLAY_ALL_MESH = 0x0010
-        val JUST_DISPLAY_UNPROVISION = 0x0011
-        val JUST_DISPLAY_BIND = 0x0100
-    }
 
     private var bluetoothAdapter: BluetoothAdapter? = null
 
@@ -33,11 +55,23 @@ class ScanDeviceListViewModel : ViewModel() {
     private val handler: Handler = Handler(Looper.getMainLooper())
     private val scanSetting: ScanSettings by lazy { buildScanSettings() }
     private val mScanCallback: ScanCallback by lazy { buildScanCallBack() }
-    private var displayMode: Int = DISPLAY_ALL_MESH
+    private var displayMode: Int = ALL_DISPLAY
     private val scan_time_out = 10*1000L
 
     fun setDisplayMode(mode: Int){
         displayMode = mode
+
+        if(mScanning){
+            GlobalScope.launch(Dispatchers.IO){
+                stopScan()
+
+                delay(2*1000L)
+
+                startScan()
+            }
+        }else{
+            startScan()
+        }
     }
 
     val deviceListLiveData: MutableLiveData<List<AdvertingDevice>> by lazy {
@@ -56,34 +90,7 @@ class ScanDeviceListViewModel : ViewModel() {
             }
         }
 
-
-
         initBlueTooth()
-
-//        loadDevices()
-
-//        Iot.apiEntry.get<DeviceStateManager>()?.addStateChangeListener {
-//            val newDeviceMap: HashMap<String, Device> = hashMapOf()
-//            it.forEach {
-//                Log.d(TAG, " stateChange deviceId : ${it.deviceId} -- activeFlag : ${it.deviceState?.activeFlags}")
-//                newDeviceMap.set(it.deviceId, it)
-//            }
-//
-//            val devices = arrayListOf<Device>()
-//            devices.addAll(deviceListLiveData.value!!)
-//            devices.forEach {
-//                val newDevice = newDeviceMap[it.deviceId]
-//
-//                newDevice?.let {
-//                    it.deviceState = newDevice.deviceState
-//                }
-//            }
-//
-//            GlobalScope.launch(Dispatchers.Main){
-//                deviceListLiveData.value = devices
-//            }
-//        }
-
     }
 
     fun initBlueTooth(){
@@ -98,8 +105,6 @@ class ScanDeviceListViewModel : ViewModel() {
         }
     }
 
-
-
     private fun startScan(){
         //TODO 暂时只适配5.0以上的
         if(android.os.Build.VERSION.SDK_INT >= 21){
@@ -113,6 +118,7 @@ class ScanDeviceListViewModel : ViewModel() {
                 scanner?.let {
                     Log.d(TAG, " start scan!")
                     try {
+                        deviceListLiveData.postValue(emptyList())
                         it.startScan(null, scanSetting, mScanCallback)
                         mScanning = true
                     }catch (exception: Exception){
@@ -184,34 +190,30 @@ class ScanDeviceListViewModel : ViewModel() {
     }
 
     private fun addNewDevice(advertingDevice: AdvertingDevice){
-        var dataflag = 0
-        if(dataMap.contains(advertingDevice.mac)){
-            dataflag = 2  // update
+        val devices = arrayListOf<AdvertingDevice>()
+        devices.addAll(deviceListLiveData.value ?: emptyList())
+        val index = devices.indexOf(advertingDevice)
+        if(index < 0){
+            // add
+            devices.add(advertingDevice)
         }else{
-            dataflag = 1  // add
+            //update
+            devices.remove(advertingDevice)
+            devices.add(index, advertingDevice)
         }
 
-        var flag = true
-        when(displayMode){
-            ALL_DISPLAY -> flag = true
-            DISPLAY_ALL_MESH -> flag = advertingDevice.isMeshDevice
-            JUST_DISPLAY_UNPROVISION -> flag = advertingDevice.isMeshDevice && advertingDevice.isUnprovisionDevice
-            JUST_DISPLAY_BIND -> flag = advertingDevice.isMeshDevice && !advertingDevice.isUnprovisionDevice
-        }
-
-        if(flag || dataflag > 0){
-            val devices = arrayListOf<AdvertingDevice>()
-            devices.addAll(deviceListLiveData.value ?: emptyList())
-            if(dataflag == 1){
-                // add
-                devices.add(advertingDevice)
-            }else if(dataflag == 2){
-                //update
-                devices.remove(advertingDevice)
-                devices.add(advertingDevice)
+        val realDevices = devices.filter { device ->
+            var flag = true
+            when(displayMode){
+                ALL_DISPLAY -> flag = true
+                DISPLAY_ALL_MESH -> flag = device.isMeshDevice
+                JUST_DISPLAY_UNPROVISION -> flag = device.isMeshDevice && device.isUnprovisionDevice
+                JUST_DISPLAY_BIND -> flag = device.isMeshDevice && !device.isUnprovisionDevice
             }
-            deviceListLiveData.value = devices
+            flag
         }
+
+        deviceListLiveData.value = realDevices
     }
 
     fun refreshDeviceList(){

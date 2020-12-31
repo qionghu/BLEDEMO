@@ -43,6 +43,9 @@ enum class OpCode(val value: Int) {
             3 -> {
                 return byteArrayOf(value.toByte(), value.shl(8).toByte(), value.shl(16).toByte())
             }
+            else -> {
+                return byteArrayOf()
+            }
         }
 
     }
