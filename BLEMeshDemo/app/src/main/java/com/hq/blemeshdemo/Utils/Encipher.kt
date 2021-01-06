@@ -21,6 +21,8 @@ fun k1(N: ByteArray, salt:ByteArray, text: String = "prck"): ByteArray{
     return aceCmac(text.toByteArray(), T)
 }
 
+
+
 fun aceCmac(data: ByteArray, key: ByteArray): ByteArray{
     val keySpec = KeyParameter(key)
     val aesEngine = AESEngine()
