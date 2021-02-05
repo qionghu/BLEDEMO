@@ -1,9 +1,11 @@
-package com.hq.blemeshdemo.bean
+package com.hq.blemesh.bean
 
-import com.hq.blemeshdemo.Utils.BitSentry
+import com.hq.blemesh.BitSentry
 import kotlin.experimental.and
 
 enum class OpCode(val value: Int) {
+
+    NONE(-1),
 
     APPKEY_ADD(0x00),
 
@@ -22,6 +24,8 @@ enum class OpCode(val value: Int) {
         val firstOctet = value.toByte()
         val bitSentry_7 = BitSentry(7)
         val bitSentry_6 = BitSentry(6)
+        if(value == NONE.value) return 0
+
         if(firstOctet.and(bitSentry_7).toInt() == 0){
             return 1
         }else if(firstOctet.and(bitSentry_6).toInt() == 0){
@@ -32,8 +36,7 @@ enum class OpCode(val value: Int) {
     }
 
     fun toBytes(): ByteArray{
-        val length = getLength()
-        when(length){
+        when(getLength()){
             1 -> {
                 return byteArrayOf(value.toByte())
             }

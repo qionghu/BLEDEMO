@@ -62,6 +62,10 @@ class ProvisionViewModel  : ViewModel() {
     private var receConfimation: ByteArray? = null
     private var receRandom: ByteArray? = null
 
+    private var deviceKey: String? = null
+
+    private var writeCCCFlag: Boolean = false
+
     private val provisionResultLiveData: MutableLiveData<ProvisionResult> = MutableLiveData<ProvisionResult>(
         ProvisionResult(ProvisionStatus.None)
     )
@@ -126,7 +130,11 @@ class ProvisionViewModel  : ViewModel() {
                         proxyServiceInit(proxyService)
 
                         handler.postDelayed({
+                            if(writeCCCFlag){
 
+                            }else{
+                                Log.d(TAG, "handleNext writeCCCFlag failed !")
+                            }
                         }, 5*1000L)
                     }
                 }
@@ -301,7 +309,7 @@ class ProvisionViewModel  : ViewModel() {
         buildProvisionRandom()
         val confirmRawData = getConfirmRawData(provisionRandom)
 
-        return aceCmac(confirmRawData, confirmationKey!!)
+        return aesCmac(confirmRawData, confirmationKey!!)
     }
 
     private fun getConfirmationKey(): ByteArray?{
@@ -401,7 +409,7 @@ class ProvisionViewModel  : ViewModel() {
         }
 
         val tempReceConfirmation = getConfirmRawData(receRandom!!)
-        val calculateConfirmation = aceCmac(tempReceConfirmation, confirmationKey!!)
+        val calculateConfirmation = aesCmac(tempReceConfirmation, confirmationKey!!)
         return Arrays.areEqual(receConfimation!!, calculateConfirmation)
     }
 
@@ -431,6 +439,8 @@ class ProvisionViewModel  : ViewModel() {
 
         val sessionKey  = k1(ecdhSecret!!, provisioningSalt, "prsk")
         val tempNonce = k1(ecdhSecret!!, provisioningSalt, "prsn")
+
+        deviceKey = k1(ecdhSecret!!, provisioningSalt, "prdk").toString()
         val sessionNonce = ByteArray(13)
         System.arraycopy(tempNonce, 3, sessionNonce, 0 , 13)
 
@@ -519,7 +529,6 @@ class ProvisionViewModel  : ViewModel() {
         proxy_in_characterictic.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
         gatt?.writeCharacteristic(proxy_in_characterictic)
     }
-
 
     private fun handleNotify(characteristic: BluetoothGattCharacteristic){
         val uuid = characteristic.uuid
@@ -703,6 +712,10 @@ class ProvisionViewModel  : ViewModel() {
             status: Int
         ) {
             Log.d(TAG, " onDescriptorWrite status :  $status -- uuid : ${descriptor?.uuid}  -- value : ${bytesToHexString(descriptor?.value, ":")}")
+            if(descriptor != null &&  descriptor.uuid == UUID.CONFIG_DESCRIPTOR_UUID && status == 0){
+                writeCCCFlag = true
+            }
+
             super.onDescriptorWrite(gatt, descriptor, status)
         }
 

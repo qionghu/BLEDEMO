@@ -40,3 +40,5 @@ data class ProvisionResult(
     val status: ProvisionStatus,
     val bean: ProvisionBean? = null
 )
+
+
